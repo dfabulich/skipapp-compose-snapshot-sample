@@ -40,11 +40,17 @@ struct ContentView: View {
     }
 }
 
-struct WelcomeView : View {
+/// Public so the app module’s screenshot tests can reference it via the transpiled Kotlin.
+public struct WelcomeView : View {
     @State var heartBeating = false
     @Binding var welcomeName: String
 
-    var body: some View {
+    public init(welcomeName: Binding<String>, heartBeating: Bool = false) {
+        self._heartBeating = State(initialValue: heartBeating)
+        self._welcomeName = welcomeName
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             Text("Hello [\(welcomeName)](https://skip.tools)!")
                 .padding()

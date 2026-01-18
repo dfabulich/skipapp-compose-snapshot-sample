@@ -1,12 +1,26 @@
 # Configuration file for https://skip.tools project
 #
 # Kotlin dependencies and Gradle build options for this module can be configured here
-#build:
-#  contents:
-#    - block: 'dependencies'
-#      contents:
-#        - 'implementation("androidx.compose.runtime:runtime")'
 
 # this is a transpiled Skip Lite module
 skip:
   mode: 'transpiled'
+
+# Compose Screenshot Testing configuration
+# See: https://developer.android.com/studio/preview/compose-screenshot-testing
+build:
+  contents:
+    # Add the screenshot testing plugin
+    - block: 'plugins'
+      contents:
+        - 'id("com.android.compose.screenshot") version "0.0.1-alpha13"'
+    
+    # Add screenshot testing dependencies
+    - block: 'dependencies'
+      contents:
+        - 'screenshotTestImplementation("com.android.tools.screenshot:screenshot-validation-api:0.0.1-alpha13")'
+        - 'screenshotTestImplementation("androidx.compose.ui:ui-tooling")'
+
+    - block: 'android'
+      contents:
+        - 'experimentalProperties["android.experimental.enableScreenshotTest"] = true'

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.application)
     id("skip-build-plugin")
+    id("com.android.compose.screenshot") version "0.0.1-alpha13"
 }
 
 skip {
@@ -44,6 +45,8 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     lint {
         disable.add("Instantiatable")
@@ -88,4 +91,12 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
+}
+
+dependencies {
+    screenshotTestImplementation("com.android.tools.screenshot:screenshot-validation-api:0.0.1-alpha13")
+    screenshotTestImplementation("androidx.compose.ui:ui-tooling")
+    screenshotTestImplementation("org.jetbrains.kotlin:kotlin-reflect")
+    // Required by Skip’s ProcessInfo/Bundle when rendering SwiftUI views in host-side screenshot tests
+    screenshotTestImplementation("androidx.test:core:1.6.1")
 }

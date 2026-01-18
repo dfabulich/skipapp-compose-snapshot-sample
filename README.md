@@ -1,19 +1,92 @@
-# MyApp
+# Skip Lite Compose Screenshot Testing Sample
 
-This is a free and open-source [Skip](https://skip.tools) dual-platform app project.
+This is a [Skip Lite](https://skip.tools) dual-platform app project, written mostly in Swift that transpiles to Kotlin, demonstrating how to setup and run [Compose Preview Screenshot Testing](https://developer.android.com/studio/preview/compose-screenshot-testing).
 
+## What's Compose Preview Screenshot Testing?
 
-<!-- TODO: add iOS screenshots to fastlane metadata
-## iPhone Screenshots
+In Compose Preview Screenshot Testing, you write `@Preview` components (like SwiftUI `#Preview`, but in Jetpack Compose) and decorate them with `@PreviewTest`. An `update` build plugin captures screenshots of all of your `@PreviewTest` components and writes them to disk; you commit them with your code.
 
-<img alt="iPhone Screenshot" src="Darwin/fastlane/screenshots/en-US/1_en-US.png" style="width: 18%" /> <img alt="iPhone Screenshot" src="Darwin/fastlane/screenshots/en-US/2_en-US.png" style="width: 18%" /> <img alt="iPhone Screenshot" src="Darwin/fastlane/screenshots/en-US/3_en-US.png" style="width: 18%" /> <img alt="iPhone Screenshot" src="Darwin/fastlane/screenshots/en-US/4_en-US.png" style="width: 18%" /> <img alt="iPhone Screenshot" src="Darwin/fastlane/screenshots/en-US/5_en-US.png" style="width: 18%" />
--->
+Later, you run your tests again in `validate` mode. The tests fail if any of your components render differently. You then review the updated screenshots in a generate HTML report; if you approve of all of the changes, rerun `update`, which wil regenerate all of the snapshots.
 
-<!-- TODO: add Android screenshots to fastlane metadata
-## Android Screenshots
+<img alt="Example screenshot" src="Android/app/src/screenshotTestDebug/reference/my/app/ContentViewScreenshotTestKt/WelcomeViewPreview_748aa731_0.png" height="300">
 
-<img alt="Android Screenshot" src="Android/fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" style="width: 18%" /> <img alt="Android Screenshot" src="Android/fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" style="width: 18%" /> <img alt="Android Screenshot" src="Android/fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" style="width: 18%" /> <img alt="Android Screenshot" src="Android/fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" style="width: 18%" /> <img alt="Android Screenshot" src="Android/fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png" style="width: 18%" />
--->
+## Writing a test
+
+```
+@PreviewTest
+@Preview(showBackground = true)
+@Composable
+fun WelcomeViewPreview() {
+    ProcessInfo.launch(LocalContext.current)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        WelcomeView(welcomeName = Binding.constant("Skipper"))
+            .Compose(context = ComposeContext())
+    }
+}
+```
+
+## Running tests
+
+Generate screenshot test results:
+
+```
+gradle -p Android -Pandroid.experimental.enableScreenshotTest=true updateDebugScreenshotTest
+```
+
+Validate that screenshot test results are unchanged:
+
+```
+gradle -p Android -Pandroid.experimental.enableScreenshotTest=true validateDebugScreenshotTest
+```
+
+(We have to use `-P` because setting this in `Android/app/gradle.properties` change doesn't apply to all of the projects that Skip generates; see below.)
+
+## Setting up Compose Screenshot Testing from Scratch
+
+The project was generated like this:
+
+```
+skip init --transpiled-app --appid=com.example.myapp skipapp-compose-snapshot-sample MyApp --no-build --free --git-repo
+```
+
+Then, I manually wired up [Compose Preview Screenshot Testing](https://developer.android.com/studio/preview/compose-screenshot-testing). Skip's Gradle plugin generates a bunch of `build.gradle.kts` files, which makes wiring it up a little confusing.
+
+Google's setup calls for four steps:
+
+1. Add `android.experimental.enableScreenshotTest=true` to `gradle.properties`. But Skip generates a bunch of `gradle.properties` files, so that setting won't quite work.
+2. Add the following three settings to your module-level `build.gradle.kts` file, e.g. `Android/app/build.gradle.kts`. But, again, Skip generates a bunch of `build.gradle.kts` files, based partly on `skip.yml`, so that's tricky, too.
+    * Add `experimentalProperties["android.experimental.enableScreenshotTest"] = true` to the `android` block of your module-level `build.gradle.kts` file, e.g. `Android/app/build.gradle.kts`. 
+    * Add the `com.android.compose.screenshot` plugin to the module-level `app/build.gradle.kts`.
+    * Add the `screenshot-validation-api` and `ui-tooling` dependencies.
+
+Here's how we do it:
+
+1. Updating `Android/app/gradle.properties` doesn't do the trick. (But I did it anyway, just for fun.) So, instead, we'll run gradle with `gradle -Pandroid.experimental.enableScreenshotTest=true` whenever we need to run `updateDebugScreenshotTest` or `validateDebugScreenshotTest`.
+2. We apply all the module-level build settings to `Android/app/build.gradle.kts`, and then re-apply them to `skip.yml`, like this:
+
+    ```yaml
+    build:
+      contents:
+        # Add the screenshot testing plugin
+        - block: 'plugins'
+          contents:
+            - 'id("com.android.compose.screenshot") version "0.0.1-alpha13"'
+        
+        # Add screenshot testing dependencies
+        - block: 'dependencies'
+          contents:
+            - 'screenshotTestImplementation("com.android.tools.screenshot:screenshot-validation-api:0.0.1-alpha13")'
+            - 'screenshotTestImplementation("androidx.compose.ui:ui-tooling")'
+    
+        - block: 'android'
+          contents:
+            - 'experimentalProperties["android.experimental.enableScreenshotTest"] = true'
+    ```
+3. Lastly, we can't test views marked `internal`, so we updated a view we wanted to test and marked it `public` (with a `public var body: some View` implementation).
+
 
 ## Building
 
