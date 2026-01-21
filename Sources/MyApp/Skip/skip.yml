@@ -24,3 +24,7 @@ build:
     - block: 'android'
       contents:
         - 'experimentalProperties["android.experimental.enableScreenshotTest"] = true'
+
+# Custom gradle properties
+gradleProperties:
+  android.experimental.enableScreenshotTest: "true"
